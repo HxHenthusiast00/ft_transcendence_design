@@ -11,8 +11,8 @@ class dashboard extends HTMLElement
         <div class="main-container">
             <div class="content">
             <a href="#game" class="btn">Offline</a>
-            <a href="" class="btn">Tournament</a>
             <a href="#pong" class="btn">Play Pong</a>  
+            <a href="#tournament" class="btn">Pong Tournament</a>
             </div>
         </div>
         `;

@@ -12,11 +12,52 @@ class PongGame extends HTMLElement {
         this.player1Name = '';
         this.player2Name = '';
         this.gameStarted = false;
+        this.tournamentMode = false;
     }
 
     connectedCallback() {
-        this.showRegistrationPopup();
+        this.tournamentMode = localStorage.getItem('pongTournamentMode') === 'true';
+        console.log("Tournament mode:", this.tournamentMode);
+        
+        if (this.tournamentMode) {
+            this.player1Name = localStorage.getItem('pongPlayer1Name');
+            this.player2Name = localStorage.getItem('pongPlayer2Name');
+            console.log("Tournament players:", this.player1Name, this.player2Name);
+            this.startGame();
+        } else if (this.loadGameState()) {
+            this.startGame();
+        } else {
+            this.showRegistrationPopup();
+        }
     }
+    saveGameState() {
+        const gameState = {
+            ball: this.ball,
+            paddle1: this.paddle1,
+            paddle2: this.paddle2,
+            score1: this.score1,
+            score2: this.score2,
+            player1Name: this.player1Name,
+            player2Name: this.player2Name,
+            gameStarted: this.gameStarted
+        };
+        localStorage.setItem('pongGameState', JSON.stringify(gameState));
+    }
+
+    loadGameState() {
+        const savedState = localStorage.getItem('pongGameState');
+        if (savedState) {
+            const gameState = JSON.parse(savedState);
+            Object.assign(this, gameState);
+            return true;
+        }
+        return false;
+    }
+
+    clearGameState() {
+        localStorage.removeItem('pongGameState');
+    }
+    
 
     showRegistrationPopup() {
         this.innerHTML = `
@@ -62,10 +103,17 @@ class PongGame extends HTMLElement {
     }
 
     startGame() {
+        console.log('Game State:', JSON.stringify({
+            player1Name: this.player1Name,
+            player2Name: this.player2Name,
+            score1: this.score1,
+            score2: this.score2,
+            tournamentMode: this.tournamentMode
+          }, null, 2));
         this.innerHTML = `
             <div id="gameArea">
                 <div id="scoreBoard">
-                    <span id="player1Score">${this.player1Name}: 0</span> - <span id="player2Score">${this.player2Name}: 0</span>
+                    <span id="player1Score">${this.player1Name}: ${this.score1}</span> - <span id="player2Score">${this.player2Name}: ${this.score2}</span>
                 </div>
                 <canvas id="pongCanvas" width="800" height="400"></canvas>
             </div>
@@ -127,11 +175,18 @@ class PongGame extends HTMLElement {
         }
 
         this.updateScoreDisplay();
-
+        this.saveGameState();
         // Check for winner
         if (this.score1 >= 3 || this.score2 >= 3) {
             this.showWinnerPopup();
         }
+        console.log('Game State:', JSON.stringify({
+            player1Name: this.player1Name,
+            player2Name: this.player2Name,
+            score1: this.score1,
+            score2: this.score2,
+            tournamentMode: this.tournamentMode
+          }, null, 2));
     }
 
     resetBall() {
@@ -179,22 +234,43 @@ class PongGame extends HTMLElement {
     showWinnerPopup() {
         this.gameStarted = false;
         const winner = this.score1 >= 3 ? this.player1Name : this.player2Name;
-        this.innerHTML += `
-            <div class="popup">
-                <h2>Game Over</h2>
-                <p>${winner} wins!</p>
-                <button id="restartGame">Play Again</button>
-                <button id="returnToDashboard">Return to Dashboard</button>
-            </div>
-        `;
-        this.querySelector('#restartGame').addEventListener('click', () => {
-            this.score1 = 0;
-            this.score2 = 0;
-            this.showMatchmakingWindow();
-        });
-        this.querySelector('#returnToDashboard').addEventListener('click', () => {
-            window.location.hash = '#dashboard';
-        });
+        console.log("Game ended. Winner:", winner);
+        
+        if (this.tournamentMode) {
+            this.clearGameState();
+            window.dispatchEvent(new CustomEvent('pongGameEnd', { detail: winner }));
+            console.log("Dispatched pongGameEnd event");
+            window.location.hash = '#tournament';
+        } else {
+            this.innerHTML += `
+                <div class="popup">
+                    <h2>Game Over</h2>
+                    <p>${winner} wins!</p>
+                    <button id="restartGame">Play Again</button>
+                    <button id="returnToDashboard">Return to Dashboard</button>
+                </div>
+            `;
+            this.querySelector('#restartGame').addEventListener('click', () => {
+                this.clearGameState();
+                this.score1 = 0;
+                this.score2 = 0;
+                this.showMatchmakingWindow();
+            });
+            this.querySelector('#returnToDashboard').addEventListener('click', () => {
+                this.clearGameState();
+                window.location.hash = '#dashboard';
+            });
+        }
+    }
+
+    clearGameState() {
+        localStorage.removeItem('pongGameState');
+        if (!this.tournamentMode) {
+            localStorage.removeItem('pongTournamentMode');
+            localStorage.removeItem('pongPlayer1Name');
+            localStorage.removeItem('pongPlayer2Name');
+        }
+        console.log("Cleared game state");
     }
 }
 
