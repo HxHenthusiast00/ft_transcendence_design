@@ -1,0 +1,54 @@
+version: '3.9'
+services:
+  backend:
+    image: backend
+    container_name: backend
+    build:
+      context: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/project:/project
+    networks:
+      - ftr
+    depends_on:
+      - db
+
+  #######################################
+
+  frontend:
+    image: frontend
+    container_name: frontend
+    build:
+      context: ./frontend
+    ports:
+      - "443:443"
+    volumes:
+      - ./frontend/nginx.conf:/etc/nginx/nginx.conf
+      - ./frontend:/usr/share/nginx/html
+    networks:
+      - ftr
+
+  #######################################
+
+  db:
+    container_name: postgres_db
+    build: 
+      context: .
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: amine
+      POSTGRES_PASSWORD: amine
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ftr
+
+volumes:
+  postgres_data:
+
+networks:  
+  ftr:
+    driver: bridge
