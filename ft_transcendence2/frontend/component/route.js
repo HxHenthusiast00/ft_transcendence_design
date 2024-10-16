@@ -3,8 +3,10 @@ const route= {
     'signin':'signin-component',
     'signup':'signup-component',
     'dashboard':'dashboard-component',
+    'multiplayer':'pong-multiplayer',
     'pong': 'pong-game' ,
-    'tournament': 'pong-tournament'
+    'tournament': 'pong-tournament',
+
 }
 
 export default route
